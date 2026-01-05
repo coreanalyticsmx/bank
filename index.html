@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bankroll</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Animaciones suaves */
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Estilos específicos para la tabla */
+        tbody tr:last-child td { border-bottom: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen selection:bg-cyan-500/30">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-20 shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-cyan-600 to-blue-600 p-2 rounded-lg shadow-lg shadow-cyan-900/20">
+                    <i data-lucide="bar-chart-2" class="text-white w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-tight">Bankroll</h1>
+                    <p class="text-xs text-slate-400">Panel de Control Profesional</p>
+                </div>
+            </div>
+            
+            <div class="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-slate-700 text-white shadow">
+                    Mi Dashboard
+                </button>
+                <button onclick="switchTab('definitions')" id="btn-definitions" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-slate-400 hover:text-white">
+                    Diccionario
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+
+        <!-- TAB: DASHBOARD -->
+        <div id="dashboard" class="tab-content active fade-in">
+            
+            <!-- Top Stats Row -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <!-- Bank Actual -->
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl relative overflow-hidden group hover:border-slate-700 transition-colors">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-bl-full -mr-2 -mt-2"></div>
+                    <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Bank Actual</p>
+                    <div class="flex items-baseline gap-2">
+                        <span id="stat-bank" class="text-2xl font-bold text-white">...</span>
+                        <span id="stat-roi-badge" class="text-emerald-400 text-xs font-bold flex items-center">
+                            <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> <span id="stat-roi-mini">...</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Yield -->
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl hover:border-slate-700 transition-colors">
+                    <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Yield (Rendimiento)</p>
+                    <div class="flex items-baseline gap-2">
+                        <span id="stat-yield" class="text-2xl font-bold text-emerald-400">...</span>
+                    </div>
+                </div>
+
+                <!-- Win Rate -->
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl hover:border-slate-700 transition-colors">
+                    <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Win Rate</p>
+                    <div class="flex items-baseline gap-2">
+                        <span id="stat-winrate" class="text-2xl font-bold text-blue-400">...</span>
+                        <span id="stat-wins-count" class="text-slate-500 text-xs">...</span>
+                    </div>
+                </div>
+
+                <!-- Cuota Promedio -->
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl hover:border-slate-700 transition-colors">
+                    <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Cuota Promedio</p>
+                    <div class="flex items-baseline gap-2">
+                        <span id="stat-avg-odds" class="text-2xl font-bold text-amber-400">...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Chart Section (Full Width) -->
+            <div class="w-full bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl shadow-black/20 mb-6">
+                <h3 class="text-white font-semibold mb-6 flex items-center gap-2">
+                    <i data-lucide="activity" class="text-cyan-400 w-5 h-5"></i> 
+                    Evolución del Bankroll
+                </h3>
+                <div class="w-full h-[350px]">
+                    <canvas id="bankrollChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Table Section -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden mt-6">
+                <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                    <h3 class="font-semibold text-white">Historial Reciente</h3>
+                    <span class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded border border-slate-700">CSV Importado</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-950/50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-800">
+                                <th class="py-3 px-4 font-medium">Fecha</th>
+                                <th class="py-3 px-4 font-medium">Deporte</th>
+                                <th class="py-3 px-4 font-medium">Selección</th>
+                                <th class="py-3 px-4 font-medium">Cuota</th>
+                                <th class="py-3 px-4 font-medium">Stake</th>
+                                <th class="py-3 px-4 font-medium text-right">Resultado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bets-table-body" class="text-sm">
+                            <!-- Rows will be injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: DEFINITIONS -->
+        <div id="definitions" class="tab-content fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Card Template -->
+                <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-slate-500 transition-all duration-300 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Yield</p>
+                            <h3 class="text-2xl font-bold mt-1 text-emerald-400">La Métrica Reina</h3>
+                        </div>
+                        <div class="p-2 rounded-lg bg-emerald-400/20">
+                            <i data-lucide="trending-up" class="text-emerald-400 w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <p class="text-slate-300 text-sm mb-3 font-medium">Mide la calidad pura de tus apuestas.</p>
+                    <div class="bg-slate-900/50 rounded p-3 text-xs text-slate-400 mt-2 space-y-2">
+                        <p>Es el beneficio neto obtenido en relación con el volumen total apostado. Te dice cuánto ganas por cada moneda que arriesgas.</p>
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-cyan-400/80">
+                            Yield = (Beneficio Neto / Total Apostado) × 100
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-slate-500 transition-all duration-300 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">ROI</p>
+                            <h3 class="text-2xl font-bold mt-1 text-blue-400">Crecimiento Real</h3>
+                        </div>
+                        <div class="p-2 rounded-lg bg-blue-400/20">
+                            <i data-lucide="dollar-sign" class="text-blue-400 w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <p class="text-slate-300 text-sm mb-3 font-medium">Comparativa financiera.</p>
+                    <div class="bg-slate-900/50 rounded p-3 text-xs text-slate-400 mt-2 space-y-2">
+                        <p>Mide el retorno sobre tu capital inicial. Útil para comparar con otras inversiones.</p>
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-cyan-400/80">
+                            ROI = (Beneficio Neto / Bank Inicial) × 100
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-slate-500 transition-all duration-300 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Drawdown</p>
+                            <h3 class="text-2xl font-bold mt-1 text-rose-400">Factor Riesgo</h3>
+                        </div>
+                        <div class="p-2 rounded-lg bg-rose-400/20">
+                            <i data-lucide="alert-triangle" class="text-rose-400 w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <p class="text-slate-300 text-sm mb-3 font-medium">Prueba de resistencia.</p>
+                    <div class="bg-slate-900/50 rounded p-3 text-xs text-slate-400 mt-2 space-y-2">
+                        <p>La caída máxima acumulada de tu bank desde su punto más alto. Ayuda a calcular el stake seguro.</p>
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-cyan-400/80">
+                            DD = (Pico Máximo - Valle Mínimo) / Pico Máximo
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-slate-500 transition-all duration-300 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">CLV</p>
+                            <h3 class="text-2xl font-bold mt-1 text-purple-400">Detector Habilidad</h3>
+                        </div>
+                        <div class="p-2 rounded-lg bg-purple-400/20">
+                            <i data-lucide="target" class="text-purple-400 w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <p class="text-slate-300 text-sm mb-3 font-medium">Vencer al mercado.</p>
+                    <div class="bg-slate-900/50 rounded p-3 text-xs text-slate-400 mt-2 space-y-2">
+                        <p>Compara tu cuota vs la de cierre. Si ganas consistentemente al cierre, ganarás dinero.</p>
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-cyan-400/80">
+                            CLV = (Tu Cuota / Cuota Cierre) - 1
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-slate-500 transition-all duration-300 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Cuota Promedio</p>
+                            <h3 class="text-2xl font-bold mt-1 text-amber-400">Volatilidad</h3>
+                        </div>
+                        <div class="p-2 rounded-lg bg-amber-400/20">
+                            <i data-lucide="activity" class="text-amber-400 w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <p class="text-slate-300 text-sm mb-3 font-medium">Perfil de apostador.</p>
+                    <div class="bg-slate-900/50 rounded p-3 text-xs text-slate-400 mt-2 space-y-2">
+                        <p>Cuotas altas = mayor varianza. Cuotas bajas = necesidad de alto acierto.</p>
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-cyan-400/80">
+                            Promedio de todas las cuotas apostadas
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- 1. DATA (Importada del CSV) ---
+        const rawData = [
+            { id: 1, date: '28/12/2025', sport: 'Americano', pick: 'JAX Jaguars (-3.5)', odds: 1.80, status: 'W', stake: 10, profit: 8.00, bank: 108.00 },
+            { id: 2, date: '01/01/2026', sport: 'Futbol', pick: 'MC (-1)', odds: 1.67, status: 'L', stake: 12, profit: -12.00, bank: 96.00 },
+            { id: 3, date: '02/01/2026', sport: 'Futbol', pick: 'Parlay', odds: 1.93, status: 'W', stake: 15, profit: 13.95, bank: 109.95 },
+            { id: 4, date: '03/12/2026', sport: 'Futbol', pick: 'Parlay', odds: 2.24, status: 'W', stake: 10, profit: 12.40, bank: 122.35 },
+            { id: 5, date: '04/05/2026', sport: 'Parlay', pick: 'Parlay', odds: 2.18, status: 'L', stake: 10, profit: -10.00, bank: 112.35 },
+            { id: 6, date: '04/05/2026', sport: 'Americano', pick: 'O 41.5', odds: 1.91, status: 'W', stake: 8, profit: 7.28, bank: 119.63 },
+        ];
+        const initialBank = 100;
+
+        // --- 2. LOGIC & CALCULATIONS ---
+        const totalStaked = rawData.reduce((acc, curr) => acc + curr.stake, 0);
+        const netProfit = rawData.reduce((acc, curr) => acc + curr.profit, 0);
+        const yieldVal = ((netProfit / totalStaked) * 100).toFixed(2);
+        const roiVal = ((netProfit / initialBank) * 100).toFixed(2);
+        const wins = rawData.filter(b => b.status === 'W').length;
+        const winRate = ((wins / rawData.length) * 100).toFixed(1);
+        const avgOdds = (rawData.reduce((acc, curr) => acc + curr.odds, 0) / rawData.length).toFixed(2);
+        const currentBank = rawData[rawData.length - 1].bank;
+
+        // Populate Top Stats
+        document.getElementById('stat-bank').innerText = currentBank.toFixed(2) + 'u';
+        document.getElementById('stat-roi-mini').innerText = `+${roiVal}%`;
+        
+        document.getElementById('stat-yield').innerText = `${yieldVal}%`;
+        document.getElementById('stat-yield').className = `text-2xl font-bold ${parseFloat(yieldVal) > 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+        
+        document.getElementById('stat-winrate').innerText = `${winRate}%`;
+        document.getElementById('stat-wins-count').innerText = `(${wins}/${rawData.length})`;
+        
+        document.getElementById('stat-avg-odds').innerText = `@${avgOdds}`;
+
+        // --- 3. CHART JS SETUP ---
+        const ctx = document.getElementById('bankrollChart').getContext('2d');
+        
+        // Prepare data: Start with initial bank
+        const labels = ['Inicio', ...rawData.map((d, i) => `Bet ${i + 1}`)];
+        const dataPoints = [initialBank, ...rawData.map(d => d.bank)];
+
+        // Chart gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(34, 211, 238, 0.2)'); // Cyan with opacity
+        gradient.addColorStop(1, 'rgba(34, 211, 238, 0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Bankroll',
+                    data: dataPoints,
+                    borderColor: '#22d3ee', // Cyan-400
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#0891b2',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.3 // Smooth curves
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#f8fafc',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `Bank: ${context.parsed.y}u`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: '#334155', display: false },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    y: {
+                        grid: { color: '#334155', borderDash: [5, 5] },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+
+
+        // --- 4. TABLE GENERATION ---
+        const tableBody = document.getElementById('bets-table-body');
+        
+        rawData.forEach(bet => {
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors";
+            
+            // Sport Badge Color Logic
+            let sportClass = "";
+            if(bet.sport === 'Americano') sportClass = "bg-amber-900/30 text-amber-400 border border-amber-900";
+            else if(bet.sport === 'Futbol') sportClass = "bg-blue-900/30 text-blue-400 border border-blue-900";
+            else sportClass = "bg-purple-900/30 text-purple-400 border border-purple-900";
+
+            // Status Icon/Color
+            const statusColor = bet.status === 'W' ? 'text-emerald-400' : 'text-rose-400';
+            const statusIcon = bet.status === 'W' ? 'check-circle' : 'x-circle';
+            const profitSign = bet.profit > 0 ? '+' : '';
+
+            tr.innerHTML = `
+                <td class="py-3 px-4 text-slate-400 font-mono">${bet.date}</td>
+                <td class="py-3 px-4">
+                    <span class="px-2 py-1 rounded text-xs font-semibold ${sportClass}">
+                        ${bet.sport}
+                    </span>
+                </td>
+                <td class="py-3 px-4 text-white font-medium">${bet.pick}</td>
+                <td class="py-3 px-4 text-slate-300">${bet.odds.toFixed(2)}</td>
+                <td class="py-3 px-4 text-slate-300">${bet.stake}u</td>
+                <td class="py-3 px-4 text-right">
+                    <span class="inline-flex items-center gap-1 font-bold ${statusColor}">
+                        <i data-lucide="${statusIcon}" class="w-3 h-3"></i>
+                        ${profitSign}${bet.profit}u
+                    </span>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+
+        // --- 5. TABS LOGIC ---
+        function switchTab(tabName) {
+            // Hide all
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            
+            // Reset Buttons
+            const btnDash = document.getElementById('btn-dashboard');
+            const btnDef = document.getElementById('btn-definitions');
+            
+            btnDash.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-slate-400 hover:text-white";
+            btnDef.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-slate-400 hover:text-white";
+
+            // Activate Target
+            document.getElementById(tabName).classList.add('active');
+            
+            // Style Active Button
+            if(tabName === 'dashboard') {
+                btnDash.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-slate-700 text-white shadow";
+            } else {
+                btnDef.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-slate-700 text-white shadow";
+            }
+        }
+
+        // --- 6. INIT ICONS ---
+        lucide.createIcons();
+    </script>
+</body>
+</html>
