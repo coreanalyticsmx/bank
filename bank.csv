@@ -1,8 +1,8 @@
 id,date,sport,pick,odds,status,stake,profit,bank
-1,28/12/2025,Americano,JAX Jaguars (-3.5),1.80,W,10,8.00,108.00
-2,01/01/2026,Futbol,MC (-1),1.67,L,12,-12.00,96.00
+1,28/12/2025,Americano,JAX Jaguars (-3.5),1.8,W,10,8,108
+2,01/01/2026,Futbol,MC (-1),1.67,L,12,-12,96
 3,02/01/2026,Futbol,Parlay,1.93,W,15,13.95,109.95
-4,03/12/2026,Futbol,Parlay,2.24,W,10,12.40,122.35
-5,04/05/2026,Parlay,Parlay,2.18,L,10,-10.00,112.35
+4,03/12/2026,Futbol,Parlay,2.24,W,10,12.4,122.35
+5,04/05/2026,Parlay,Parlay,2.18,L,10,-10,112.35
 6,04/05/2026,Americano,O 41.5,1.91,W,8,7.28,119.63
-7,12/10/2025,Parlay,2.0,W,10,10,229.63
+7,12/10/26,Futbol,AA UNAM vs CA,1.5,W,10,5,124.63
